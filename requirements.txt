@@ -1,0 +1,9 @@
+pymupdf
+sentence-transformers
+torch
+numpy
+pydantic
+openpyxl
+python-dotenv
+openai
+pandas

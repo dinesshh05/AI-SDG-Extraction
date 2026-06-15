@@ -1,0 +1,34 @@
+# Virtual Environment
+SDGenv/
+
+# Environment Variables
+.env
+
+# Python Cache
+__pycache__/
+*.pyc
+
+# Generated Files
+cache/
+output/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test Cache
+.pytest_cache/
+
+# Jupyter
+.ipynb_checkpoints/
+
+input/*.pdf
