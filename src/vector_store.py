@@ -1,6 +1,6 @@
 import os
-import sqlite3
-import numpy as np
+import sqlite3 
+import numpy as np  #type:ignore
 
 
 os.makedirs(

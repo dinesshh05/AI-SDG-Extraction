@@ -24,8 +24,10 @@ Sustainability and ESG initiatives mapped to UN SDGs.
 )
 
 uploaded_file = st.file_uploader(
-    "Upload Annual Report PDF",
-    type=["pdf"]
+    "Upload a single Annual Report PDF",
+    type=["pdf"],
+    accept_multiple_files=False,
+    help="Only one PDF can be processed at a time."
 )
 
 if uploaded_file:

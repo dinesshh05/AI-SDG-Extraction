@@ -1,10 +1,17 @@
-from openpyxl import Workbook #type:ignore
+import os
+
+from openpyxl import Workbook  # type: ignore
 
 
 def export_to_excel(
     initiatives,
     output_path="output/sustainability_report.xlsx"
 ):
+
+    os.makedirs(
+        "output",
+        exist_ok=True
+    )
 
     wb = Workbook()
 
@@ -43,8 +50,12 @@ def export_to_excel(
             ]
         )
 
-    wb.save(output_path)
+    wb.save(
+        output_path
+    )
 
     print(
         f"\nExcel saved to: {output_path}"
     )
+
+    return output_path

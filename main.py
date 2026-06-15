@@ -173,13 +173,15 @@ TEXT:
 
     print("\n[6/6] Exporting Excel...")
 
-    export_to_excel(
+    output_file=export_to_excel(
         validated
     )
 
     print(
         "\nPipeline Completed Successfully."
     )
+
+    return output_file
 
 def run_pipeline(pdf_path):
 
@@ -189,9 +191,9 @@ def run_pipeline(pdf_path):
 
     build_embeddings()
 
-    run_extraction()
+    output_file = run_extraction()
 
-    return "output/sustainability_report.xlsx"
+    return output_file
 
 if __name__ == "__main__":
 
