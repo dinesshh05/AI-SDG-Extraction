@@ -1,5 +1,11 @@
 # AI Sustainability Initiative Extractor
 
+🔗 **Live Demo:** https://ai-sdg-extraction-jqzkbzg9b5s9h73q98fscx.streamlit.app
+
+💻 **GitHub Repository:** https://github.com/dinesshh05/AI-SDG-Extraction
+
+---
+
 ## Overview
 
 AI-powered system that extracts Sustainability and ESG initiatives from corporate annual reports and maps them to relevant United Nations Sustainable Development Goals (SDGs).
