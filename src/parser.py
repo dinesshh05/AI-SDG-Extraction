@@ -22,21 +22,3 @@ def extract_pages(pdf_path: str):
     return pages
 
 
-if __name__ == "__main__":
-
-    pdf_path = "input\Adani Port FY22.pdf"
-
-    pages = extract_pages(pdf_path)
-
-    print(f"Total Pages: {len(pages)}")
-
-    print("\nFirst Page Preview:\n")
-    print(pages[0]["text"][:1000])
-
-    empty_pages = [
-        page["page_no"]
-        for page in pages
-        if not page["text"]
-    ]
-
-    print(f"\nEmpty Pages: {empty_pages}")

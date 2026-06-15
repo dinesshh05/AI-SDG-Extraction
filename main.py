@@ -36,10 +36,12 @@ from src.excel_writer import (
 )
 
 
-PDF_PATH = "input\Adani Port FY22.pdf"
+PDF_PATH = None
 
 
 def build_embeddings():
+
+    global PDF_PATH
 
     DB_PATH = "cache/embeddings.db"
 
@@ -179,9 +181,20 @@ TEXT:
         "\nPipeline Completed Successfully."
     )
 
+def run_pipeline(pdf_path):
 
-if __name__ == "__main__":
+    global PDF_PATH
+
+    PDF_PATH = pdf_path
 
     build_embeddings()
 
     run_extraction()
+
+    return "output/sustainability_report.xlsx"
+
+if __name__ == "__main__":
+
+    print(
+        "Run the application using: streamlit run app.py"
+    )
