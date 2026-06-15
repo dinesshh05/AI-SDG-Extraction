@@ -1,8 +1,17 @@
+import os
 import sqlite3
 import numpy as np
 
 
-DB_PATH = "cache/embeddings.db"
+os.makedirs(
+    "cache",
+    exist_ok=True
+)
+
+DB_PATH = os.path.join(
+    "cache",
+    "embeddings.db"
+)
 
 
 def init_db():
@@ -45,7 +54,9 @@ def store_embedding(
             start_page,
             end_page,
             chunk_text,
-            embedding.astype(np.float32).tobytes()
+            embedding.astype(
+                np.float32
+            ).tobytes()
         )
     )
 
@@ -76,8 +87,6 @@ def fetch_all_embeddings():
                 "start_page": row[1],
                 "end_page": row[2],
                 "chunk_text": row[3],
-
-                # convert blob back to numpy vector
                 "embedding": np.frombuffer(
                     row[4],
                     dtype=np.float32
