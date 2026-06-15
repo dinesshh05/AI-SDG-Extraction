@@ -1,18 +1,19 @@
 import os
 
-import streamlit as st
+import streamlit as st #type:ignore
+
 
 from main import run_pipeline
 
 
 st.set_page_config(
     page_title="AI Sustainability Initiative Extractor",
-    page_icon="🌱",
+    page_icon="🌎",
     layout="wide"
 )
 
 st.title(
-    "🌱 AI Sustainability Initiative Extractor"
+    "🌎 AI Sustainability Initiative Extractor"
 )
 
 st.markdown(
