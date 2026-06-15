@@ -140,7 +140,7 @@ def run_extraction():
 
     context = ""
 
-    for result in results[:8]:
+    for result in results[:20]:
 
         chunk = result["chunk"]
 
