@@ -1,3 +1,13 @@
+import sys
+import os
+
+sys.path.append(
+    os.path.dirname(
+        os.path.dirname(
+            os.path.abspath(__file__)
+        )
+    )
+)
 from src.parser import extract_pages
 from src.chunker import chunk_pages
 
