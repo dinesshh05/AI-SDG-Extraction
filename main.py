@@ -1,4 +1,7 @@
 import os
+import glob
+
+PDF_PATH = None
 
 from src.parser import extract_pages
 from src.chunker import chunk_pages
@@ -36,7 +39,6 @@ from src.excel_writer import (
 )
 
 
-PDF_PATH = None
 
 
 def build_embeddings():
@@ -47,31 +49,11 @@ def build_embeddings():
 
     if os.path.exists(DB_PATH):
 
-        try:
+        print(
+            "\nRemoving old embeddings database..."
+        )
 
-            existing = fetch_all_embeddings()
-
-            if len(existing) > 0:
-
-                print(
-                    f"\nEmbeddings already exist ({len(existing)} records)."
-                )
-
-                print(
-                    "Skipping embedding generation."
-                )
-
-                return
-
-        except Exception:
-
-            print(
-                "\nExisting DB found but could not be read."
-            )
-
-            print(
-                "Rebuilding embeddings..."
-            )
+        os.remove(DB_PATH)
 
     print("\n[1/6] Parsing PDF...")
 
@@ -197,6 +179,24 @@ def run_pipeline(pdf_path):
 
 if __name__ == "__main__":
 
+    pdf_files = sorted(
+        glob.glob("input/*.pdf"),
+        key=os.path.getmtime,
+        reverse=True
+        )
+
+    if not pdf_files:
+
+        raise FileNotFoundError(
+            "No PDF found in input folder."
+        )
+
+    PDF_PATH = pdf_files[0]
+
     print(
-        "Run the application using: streamlit run app.py"
+        f"Using PDF: {PDF_PATH}"
     )
+
+    build_embeddings()
+
+    run_extraction()
