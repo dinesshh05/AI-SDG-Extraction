@@ -1,6 +1,6 @@
 import numpy as np #type:ignore
 
-from rank_bm25 import BM25Okapi
+from rank_bm25 import BM25Okapi #type:ignore
 
 from src.embeddings import generate_embedding
 from src.vector_store import fetch_all_embeddings
