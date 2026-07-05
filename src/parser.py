@@ -64,40 +64,33 @@ def _is_heading(text: str):
 
     lower = text.lower()
 
-    # ------------------------------------
-    # Reject obvious non-headings first
-    # ------------------------------------
-
     for phrase in BAD_HEADINGS:
-
         if phrase in lower:
             return False
 
-    # ------------------------------------
-    # Numbered headings
-    # ------------------------------------
+    # A numbered/roman pattern alone isn't enough - numbered legal
+    # disclosure clauses ("3. Significant or material orders passed
+    # by the Regulators...") match the same pattern as real section
+    # titles ("56. Business Responsibility..."). Guard against
+    # treating a full sentence as a heading just because it starts
+    # with a number.
+    
+    looks_like_sentence = (
+        len(text.split()) > 12
+        or text.endswith((".", ":", ";"))
+    )
 
-    if NUMBERED_HEADING_RE.match(text):
+    if NUMBERED_HEADING_RE.match(text) and not looks_like_sentence:
         return True
 
-    # ------------------------------------
-    # Roman numeral headings
-    # ------------------------------------
-
-    if ROMAN_HEADING_RE.match(text):
+    if ROMAN_HEADING_RE.match(text) and not looks_like_sentence:
         return True
-
-    # ------------------------------------
-    # Known section names
-    # ------------------------------------
 
     for keyword in SECTION_KEYWORDS:
-
         if keyword in lower:
             return True
 
     return False
-
 def extract_pages(pdf_path):
 
     doc = fitz.open(pdf_path)
