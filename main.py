@@ -5,7 +5,6 @@ PDF_PATH = None
 
 from src.parser import extract_pages
 from src.chunker import chunk_pages
-
 from src.embeddings import generate_embedding
 
 from src.vector_store import (
@@ -14,31 +13,13 @@ from src.vector_store import (
     fetch_all_embeddings
 )
 
-from src.filtering import (
-    is_noise_chunk
-)
+from src.filtering import filter_chunks
 
-from src.retrieval import (
-    retrieve_sustainability_chunks
-)
-
-from src.query_bank import (
-    SUSTAINABILITY_QUERIES
-)
-
-from src.extractor import (
-    extract_initiatives
-)
-
-from src.validator import (
-    validate_initiatives
-)
-
-from src.excel_writer import (
-    export_to_excel
-)
-
-
+from src.retrieval import retrieve_sustainability_chunks
+from src.query_bank import SUSTAINABILITY_QUERIES
+from src.extractor import extract_initiatives
+from src.validator import validate_initiatives
+from src.excel_writer import export_to_excel
 
 
 def build_embeddings():
@@ -48,77 +29,58 @@ def build_embeddings():
     DB_PATH = "cache/embeddings.db"
 
     if os.path.exists(DB_PATH):
-
-        print(
-            "\nRemoving old embeddings database..."
-        )
-
+        print("\nRemoving old embeddings database...")
         os.remove(DB_PATH)
 
     print("\n[1/6] Parsing PDF...")
 
-    pages = extract_pages(
-        PDF_PATH
-    )
+    pages = extract_pages(PDF_PATH)
 
-    print(
-        f"Pages Found: {len(pages)}"
-    )
+    print(f"Pages Found: {len(pages)}")
 
     print("\n[2/6] Chunking...")
 
-    chunks = chunk_pages(
-        pages
-    )
+    chunks = chunk_pages(pages)
 
-    print(
-        f"Chunks Created: {len(chunks)}"
-    )
+    print(f"Chunks Created: {len(chunks)}")
 
-    print("\n[3/6] Building Embeddings...")
+    print("\n[3/6] Filtering...")
+
+    kept_chunks, skipped_chunks = filter_chunks(chunks)
+
+    print(f"Chunks Kept   : {len(kept_chunks)}")
+    print(f"Chunks Skipped: {len(skipped_chunks)}")
+
+    print("\n[4/6] Building Embeddings...")
 
     init_db()
 
-    stored = 0
+    for chunk in kept_chunks:
 
-    for chunk in chunks:
-
-        if is_noise_chunk(
-            chunk["chunk_text"]
-        ):
-            continue
-
-        embedding = generate_embedding(
-            chunk["chunk_text"]
-        )
+        embedding = generate_embedding(chunk["chunk_text"])
 
         store_embedding(
             chunk["chunk_id"],
             chunk["start_page"],
             chunk["end_page"],
+            chunk.get("section", ""),   # now stored, no longer dropped
             chunk["chunk_text"],
             embedding
         )
 
-        stored += 1
-
-    print(
-        f"Embeddings Stored: {stored}"
-    )
+    print(f"Embeddings Stored: {len(kept_chunks)}")
 
 
 def run_extraction():
 
-    print("\n[4/6] Retrieving Sustainability Chunks...")
+    print("\n[5/6] Retrieving Sustainability Chunks...")
 
     results = retrieve_sustainability_chunks(
         SUSTAINABILITY_QUERIES,
         top_k_per_query=10
     )
 
-    print(
-        f"Retrieved Chunks: {len(results)}"
-    )
+    print(f"Retrieved Chunks: {len(results)}")
 
     context = ""
 
@@ -127,7 +89,7 @@ def run_extraction():
         chunk = result["chunk"]
 
         context += f"""
-
+SECTION: {chunk.get('section', '')}
 PAGES: {chunk['start_page']}-{chunk['end_page']}
 
 TEXT:
@@ -135,35 +97,24 @@ TEXT:
 
 """
 
-    print(
-        f"\nContext Length: {len(context)} characters"
-    )
+    print(f"\nContext Length: {len(context)} characters")
 
-    print("\n[5/6] Extracting Initiatives...")
+    print("\n[6/6] Extracting Initiatives...")
 
-    initiatives = extract_initiatives(
-        context
-    )
+    initiatives = extract_initiatives(context)
 
-    validated = validate_initiatives(
-        initiatives
-    )
+    validated = validate_initiatives(initiatives)
 
-    print(
-        f"\nValidated Records: {len(validated)}"
-    )
+    print(f"\nValidated Records: {len(validated)}")
 
-    print("\n[6/6] Exporting Excel...")
+    print("\nExporting Excel...")
 
-    output_file=export_to_excel(
-        validated
-    )
+    output_file = export_to_excel(validated)
 
-    print(
-        "\nPipeline Completed Successfully."
-    )
+    print("\nPipeline Completed Successfully.")
 
     return output_file
+
 
 def run_pipeline(pdf_path):
 
@@ -177,25 +128,21 @@ def run_pipeline(pdf_path):
 
     return output_file
 
+
 if __name__ == "__main__":
 
     pdf_files = sorted(
         glob.glob("input/*.pdf"),
         key=os.path.getmtime,
         reverse=True
-        )
+    )
 
     if not pdf_files:
-
-        raise FileNotFoundError(
-            "No PDF found in input folder."
-        )
+        raise FileNotFoundError("No PDF found in input folder.")
 
     PDF_PATH = pdf_files[0]
 
-    print(
-        f"Using PDF: {PDF_PATH}"
-    )
+    print(f"Using PDF: {PDF_PATH}")
 
     build_embeddings()
 
