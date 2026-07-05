@@ -1,6 +1,6 @@
 import os
-import sqlite3 
-import numpy as np  #type:ignore
+import sqlite3
+import numpy as np  # type:ignore
 
 
 os.makedirs(
@@ -21,11 +21,12 @@ def init_db():
     conn.execute(
         """
         CREATE TABLE IF NOT EXISTS embeddings (
-            chunk_id TEXT PRIMARY KEY,
+            chunk_id   TEXT PRIMARY KEY,
             start_page INTEGER,
-            end_page INTEGER,
+            end_page   INTEGER,
+            section    TEXT,
             chunk_text TEXT,
-            embedding BLOB
+            embedding  BLOB
         )
         """
     )
@@ -38,6 +39,7 @@ def store_embedding(
     chunk_id,
     start_page,
     end_page,
+    section,
     chunk_text,
     embedding
 ):
@@ -47,16 +49,15 @@ def store_embedding(
     conn.execute(
         """
         INSERT OR REPLACE INTO embeddings
-        VALUES (?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?)
         """,
         (
             chunk_id,
             start_page,
             end_page,
+            section,
             chunk_text,
-            embedding.astype(
-                np.float32
-            ).tobytes()
+            embedding.astype(np.float32).tobytes()
         )
     )
 
@@ -70,7 +71,7 @@ def fetch_all_embeddings():
 
     rows = conn.execute(
         """
-        SELECT *
+        SELECT chunk_id, start_page, end_page, section, chunk_text, embedding
         FROM embeddings
         """
     ).fetchall()
@@ -83,12 +84,13 @@ def fetch_all_embeddings():
 
         result.append(
             {
-                "chunk_id": row[0],
+                "chunk_id":   row[0],
                 "start_page": row[1],
-                "end_page": row[2],
-                "chunk_text": row[3],
-                "embedding": np.frombuffer(
-                    row[4],
+                "end_page":   row[2],
+                "section":    row[3],
+                "chunk_text": row[4],
+                "embedding":  np.frombuffer(
+                    row[5],
                     dtype=np.float32
                 )
             }
