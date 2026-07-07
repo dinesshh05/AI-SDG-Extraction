@@ -17,7 +17,7 @@ from src.filtering import filter_chunks
 
 from src.retrieval import retrieve_sustainability_chunks
 from src.query_bank import SUSTAINABILITY_QUERIES
-from src.extractor import extract_initiatives
+from src.extractor import extract_initiatives_batched
 from src.validator import validate_initiatives
 from src.excel_writer import export_to_excel
 
@@ -82,30 +82,20 @@ def run_extraction():
 
     print(f"Retrieved Chunks: {len(results)}")
 
-    context = ""
-
-    for result in results[:12]:
-
-        chunk = result["chunk"]
-
-        context += f"""
-SECTION: {chunk.get('section', '')}
-PAGES: {chunk['start_page']}-{chunk['end_page']}
-
-TEXT:
-{chunk['chunk_text']}
-
-"""
-
-    print(f"\nContext Length: {len(context)} characters")
-
     print("\n[6/6] Extracting Initiatives...")
 
-    initiatives = extract_initiatives(context)
+    initiatives = extract_initiatives_batched(
+        results,
+        max_tokens_per_batch=4000,
+        max_batches=8,
+        delay_seconds=2
+    )
+
+    print(f"\nRaw Extracted Records: {len(initiatives)}")
 
     validated = validate_initiatives(initiatives)
 
-    print(f"\nValidated Records: {len(validated)}")
+    print(f"Validated Records: {len(validated)}")
 
     print("\nExporting Excel...")
 
