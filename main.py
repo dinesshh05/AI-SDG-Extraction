@@ -17,7 +17,7 @@ from src.filtering import filter_chunks
 
 from src.retrieval import retrieve_sustainability_chunks
 from src.query_bank import SUSTAINABILITY_QUERIES
-from src.extractor import extract_initiatives_batched
+from src.extractor import extract_initiatives, extract_initiatives_batched
 from src.validator import validate_initiatives
 from src.excel_writer import export_to_excel
 
@@ -93,9 +93,14 @@ def run_extraction():
 
     print(f"\nRaw Extracted Records: {len(initiatives)}")
 
-    validated = validate_initiatives(initiatives)
+    validated, validation_errors = validate_initiatives(initiatives)
 
     print(f"Validated Records: {len(validated)}")
+
+    if validation_errors:
+        print(f"Validation Failures: {len(validation_errors)}")
+        for err in validation_errors:
+            print(f"  - {err['reason']}")
 
     print("\nExporting Excel...")
 
@@ -103,7 +108,7 @@ def run_extraction():
 
     print("\nPipeline Completed Successfully.")
 
-    return output_file
+    return output_file, validation_errors
 
 
 def run_pipeline(pdf_path):
@@ -114,9 +119,9 @@ def run_pipeline(pdf_path):
 
     build_embeddings()
 
-    output_file = run_extraction()
+    output_file, validation_errors = run_extraction()
 
-    return output_file
+    return output_file, validation_errors
 
 
 if __name__ == "__main__":
@@ -136,4 +141,7 @@ if __name__ == "__main__":
 
     build_embeddings()
 
-    run_extraction()
+    output_file, validation_errors = run_extraction()
+
+    if validation_errors:
+        print(f"\n{len(validation_errors)} record(s) failed validation and were excluded.")

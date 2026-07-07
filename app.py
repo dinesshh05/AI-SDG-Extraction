@@ -74,13 +74,25 @@ if uploaded_file:
                         cache_db
                     )
 
-                output_file = run_pipeline(
+                output_file, validation_errors = run_pipeline(
                     pdf_path
                 )
 
             st.success(
                 "✅ Extraction Completed Successfully!"
             )
+
+            if validation_errors:
+
+                st.warning(
+                    f"⚠️ {len(validation_errors)} extracted record(s) "
+                    f"failed validation and were excluded from the report."
+                )
+
+                with st.expander("Show validation error details"):
+
+                    for err in validation_errors:
+                        st.text(err["reason"])
 
             if os.path.exists(
                 output_file
