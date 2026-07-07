@@ -1,5 +1,5 @@
 from typing import List, Tuple, Dict
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, ValidationError #type:ignore
 
 
 class Initiative(BaseModel):
