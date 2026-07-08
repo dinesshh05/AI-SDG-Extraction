@@ -61,22 +61,29 @@ if uploaded_file:
 
         try:
 
-            with st.spinner(
-                "Processing Annual Report..."
+            progress_bar = st.progress(0)
+            status_text = st.empty()
+
+            def update_progress(step, total_steps, label):
+                progress_bar.progress(step / total_steps)
+                status_text.text(f"[{step}/{total_steps}] {label}")
+
+            cache_db = "cache/embeddings.db"
+
+            if os.path.exists(
+                cache_db
             ):
-
-                cache_db = "cache/embeddings.db"
-
-                if os.path.exists(
+                os.remove(
                     cache_db
-                ):
-                    os.remove(
-                        cache_db
-                    )
-
-                output_file, validation_errors = run_pipeline(
-                    pdf_path
                 )
+
+            output_file, validation_errors = run_pipeline(
+                pdf_path,
+                progress_callback=update_progress
+            )
+
+            progress_bar.progress(1.0)
+            status_text.text("Done.")
 
             st.success(
                 "✅ Extraction Completed Successfully!"
