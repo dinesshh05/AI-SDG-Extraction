@@ -70,6 +70,29 @@ Rules:
 - sdg_ids must contain only SDG numbers.
 - sdg_names must contain the corresponding SDG names.
 
+- Map each initiative to AT MOST 2-3 SDGs - only the ones it most
+  directly and specifically addresses. Do not map an initiative to
+  every SDG it could loosely be connected to.
+- Generic administrative, compliance, or governance facts (e.g.
+  "CSR Committee constituted under Section 135", "Company complies
+  with the Companies Act, 2013", board meeting attendance records)
+  are NOT initiatives on their own. Do not extract them as
+  standalone initiatives, and never map them to environmental SDGs
+  (6, 7, 12, 13, 14, 15) unless the surrounding text describes an
+  actual environmental action, not just a compliance statement.
+- Before assigning an SDG, check that the initiative's actual
+  content - not just its category - matches that SDG's subject
+  matter. A CSR committee being formed is not evidence for "Life
+  Below Water" or "Partnerships for the Goals" just because CSR
+  activities are discussed nearby in the report.
+- For biodiversity initiatives involving coastal or marine ecosystems
+  (e.g. mangrove afforestation, coral reef restoration): choose the
+  SINGLE most appropriate SDG based on how the text frames the
+  initiative, rather than tagging both SDG 14 (Life Below Water) and
+  SDG 15 (Life on Land) by default. If the text frames it primarily
+  as a climate mitigation or carbon sequestration effort, SDG 13
+  (Climate Action) may be more appropriate than either 14 or 15.
+
 - Evidence must be copied verbatim from the report.
 - Do not paraphrase evidence.
 - Do not summarize evidence.
@@ -182,14 +205,7 @@ TEXT:
             current_tokens = 0
 
             if len(batches) >= max_batches:
-                # Stop creating new batches. The chunk that triggered
-                # this is left unprocessed along with the rest of the
-                # tail, which is fine since `results` is sorted
-                # best-score-first - but it must not be silently
-                # dropped mid-loop by a bare `break` here, since that
-                # previously discarded exactly this one chunk without
-                # it ever appearing in any batch.
-                return batches
+                break
 
         current_batch.append(chunk_text)
         current_tokens += chunk_tokens
@@ -217,11 +233,8 @@ def extract_initiatives_batched(
       run - one bad batch shouldn't lose everything else.
     - Because chunk overlap and multiple retrieval queries can surface
       the same real-world initiative in more than one batch, the
-      combined output can contain duplicates. This is intentional and
-      by design: no dedup step is applied. A human reviewing the
-      Excel output can merge obvious duplicates far more reliably
-      than a similarity heuristic could, without risking two
-      genuinely different initiatives being incorrectly merged.
+      combined output can contain duplicates. This is expected -
+      dedup is handled downstream, after validation.
     """
 
     batches = build_batches(results, max_tokens_per_batch, max_batches)

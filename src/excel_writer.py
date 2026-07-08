@@ -1,9 +1,9 @@
 import os
-
+ 
 from openpyxl import Workbook  # type: ignore
-from openpyxl.styles import Font  # type: ignore
-
-
+from openpyxl.styles import Font, Alignment  # type: ignore
+ 
+ 
 SDG_TITLES = {
     1:  "SDG 1: No Poverty",
     2:  "SDG 2: End hunger, achieve food security and improved nutrition and promote sustainable agriculture",
@@ -23,66 +23,67 @@ SDG_TITLES = {
     16: "SDG 16: Peace, Justice, and Strong Institutions",
     17: "SDG 17: Partnerships for the Goals",
 }
-
+ 
 HEADER_FONT = Font(bold=True, size=10)
 BODY_FONT = Font(bold=False, size=10)
 NO_ACTIVITY_TEXT = "No activity fetched"
-
-
+ 
+ 
 def _group_by_sdg(initiatives):
     """One initiative can map to multiple SDGs, so it's repeated under each."""
-
+ 
     grouped = {sdg_no: [] for sdg_no in SDG_TITLES}
-
+ 
     for item in initiatives:
         for sdg_id in item.get("sdg_ids", []):
             if sdg_id in grouped:
                 grouped[sdg_id].append(item)
-
+ 
     return grouped
-
-
+ 
+ 
 def _format_activity_list(items):
-
+ 
     if not items:
         return NO_ACTIVITY_TEXT
-
+ 
     lines = []
-
+ 
     for i, item in enumerate(items, start=1):
         text = (item.get("description") or item.get("initiative_name", "")).strip()
         metric = item.get("metric", "")
         if metric:
             text = f"{text} ({metric})" if text else metric
         lines.append(f"{i}. {text}")
-
+ 
     return "\n".join(lines)
-
-
+ 
+ 
 def export_to_excel(initiatives, output_path="output/sustainability_report.xlsx"):
-
+ 
     os.makedirs("output", exist_ok=True)
-
+ 
     wb = Workbook()
     ws = wb.active
     ws.title = "Sustainability Initiatives"
-
+ 
     grouped = _group_by_sdg(initiatives)
     row = 1
-
+ 
     for sdg_no in sorted(grouped):
-
+ 
         ws.cell(row=row, column=1, value=SDG_TITLES[sdg_no]).font = HEADER_FONT
         row += 1
-
+ 
         cell = ws.cell(row=row, column=1, value=_format_activity_list(grouped[sdg_no]))
         cell.font = BODY_FONT
-        cell.alignment = cell.alignment.copy(wrap_text=True)
+        cell.alignment = Alignment(wrap_text=True)
         row += 2
-
+ 
     ws.column_dimensions["A"].width = 100
-
+ 
     wb.save(output_path)
     print(f"\nExcel saved to: {output_path}")
-
+ 
     return output_path
+ 
