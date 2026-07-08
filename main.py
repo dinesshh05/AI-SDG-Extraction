@@ -22,7 +22,24 @@ from src.validator import validate_initiatives
 from src.excel_writer import export_to_excel
 
 
-def build_embeddings():
+TOTAL_STEPS = 6
+
+
+def _report(progress_callback, step, label):
+    """
+    Fires the optional progress callback with (step, TOTAL_STEPS, label)
+    and always prints the same [n/6] line to console, so CLI behavior
+    is unchanged whether or not a callback is provided. Frontends
+    (e.g. Streamlit) pass a callback to render a real progress bar
+    and step label instead of relying on console output.
+    """
+    print(f"\n[{step}/{TOTAL_STEPS}] {label}")
+
+    if progress_callback:
+        progress_callback(step, TOTAL_STEPS, label)
+
+
+def build_embeddings(progress_callback=None):
 
     global PDF_PATH
 
@@ -32,26 +49,26 @@ def build_embeddings():
         print("\nRemoving old embeddings database...")
         os.remove(DB_PATH)
 
-    print("\n[1/6] Parsing PDF...")
+    _report(progress_callback, 1, "Parsing PDF...")
 
     pages = extract_pages(PDF_PATH)
 
     print(f"Pages Found: {len(pages)}")
 
-    print("\n[2/6] Chunking...")
+    _report(progress_callback, 2, "Chunking...")
 
     chunks = chunk_pages(pages)
 
     print(f"Chunks Created: {len(chunks)}")
 
-    print("\n[3/6] Filtering...")
+    _report(progress_callback, 3, "Filtering...")
 
     kept_chunks, skipped_chunks = filter_chunks(chunks)
 
     print(f"Chunks Kept   : {len(kept_chunks)}")
     print(f"Chunks Skipped: {len(skipped_chunks)}")
 
-    print("\n[4/6] Building Embeddings...")
+    _report(progress_callback, 4, "Building Embeddings...")
 
     init_db()
 
@@ -63,7 +80,7 @@ def build_embeddings():
             chunk["chunk_id"],
             chunk["start_page"],
             chunk["end_page"],
-            chunk.get("section", ""),   # now stored, no longer dropped
+            chunk.get("section", ""),
             chunk["chunk_text"],
             embedding
         )
@@ -71,9 +88,9 @@ def build_embeddings():
     print(f"Embeddings Stored: {len(kept_chunks)}")
 
 
-def run_extraction():
+def run_extraction(progress_callback=None):
 
-    print("\n[5/6] Retrieving Sustainability Chunks...")
+    _report(progress_callback, 5, "Retrieving Sustainability Chunks...")
 
     results = retrieve_sustainability_chunks(
         SUSTAINABILITY_QUERIES,
@@ -82,7 +99,7 @@ def run_extraction():
 
     print(f"Retrieved Chunks: {len(results)}")
 
-    print("\n[6/6] Extracting Initiatives...")
+    _report(progress_callback, 6, "Extracting Initiatives...")
 
     initiatives = extract_initiatives_batched(
         results,
@@ -111,15 +128,15 @@ def run_extraction():
     return output_file, validation_errors
 
 
-def run_pipeline(pdf_path):
+def run_pipeline(pdf_path, progress_callback=None):
 
     global PDF_PATH
 
     PDF_PATH = pdf_path
 
-    build_embeddings()
+    build_embeddings(progress_callback)
 
-    output_file, validation_errors = run_extraction()
+    output_file, validation_errors = run_extraction(progress_callback)
 
     return output_file, validation_errors
 
