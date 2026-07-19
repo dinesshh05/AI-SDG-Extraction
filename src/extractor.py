@@ -208,17 +208,17 @@ def estimate_tokens(text: str) -> int:
 
 def build_batches(results, max_tokens_per_batch=4000, max_batches=8):
     """
-    Groups retrieved chunks (already sorted by score, best first) into
+    Groups retrieved chunks (already sorted/ordered upstream) into
     token-budgeted batches.
 
     - Chunks are added to the current batch until adding the next one
       would exceed max_tokens_per_batch, at which point the batch is
       sealed and a new one starts.
     - Stops creating new batches once max_batches is reached. Since
-      `results` is sorted best-score-first, anything left over at that
-      point is the lowest-ranked content in the pool - an acceptable
-      tradeoff to stay within rate limits rather than firing an
-      unbounded number of LLM calls.
+      `results` is already ordered (best/most-representative first),
+      anything left over at that point is the lowest-priority content
+      in the pool - an acceptable tradeoff to stay within rate limits
+      rather than firing an unbounded number of LLM calls.
     """
 
     batches = []
@@ -265,15 +265,25 @@ def extract_initiatives_batched(
     Runs extraction across multiple token-budgeted batches instead of
     a single fixed-size call, then merges all results.
 
+    Returns (all_initiatives, batch_errors) instead of just the
+    initiatives list. Previously, a failed batch (rate limit, API
+    error, malformed JSON) was only printed to console and silently
+    skipped - if EVERY batch failed, the pipeline still completed
+    "successfully" with a fully empty report and no error surfaced to
+    the user. Returning batch_errors lets the caller detect this and
+    fail loudly instead.
+
     - One extract_initiatives() call per batch, sequentially.
     - A short delay between calls to stay under free-tier RPM limits.
-    - If a batch's call fails (malformed JSON, API error, etc.), that
-      batch is skipped with a warning rather than crashing the whole
-      run - one bad batch shouldn't lose everything else.
+    - If a batch's call fails, that batch is skipped (with its error
+      recorded) rather than crashing the whole run - one bad batch
+      shouldn't lose everything else, but the caller now knows it
+      happened.
     - Because chunk overlap and multiple retrieval queries can surface
       the same real-world initiative in more than one batch, the
       combined output can contain duplicates. This is expected -
-      dedup is handled downstream, after validation.
+      dedup is handled downstream, in excel_writer.py, after
+      validation.
     """
 
     batches = build_batches(results, max_tokens_per_batch, max_batches)
@@ -281,6 +291,7 @@ def extract_initiatives_batched(
     print(f"Running extraction across {len(batches)} batches...")
 
     all_initiatives = []
+    batch_errors = []
 
     for i, batch in enumerate(batches):
 
@@ -294,9 +305,10 @@ def extract_initiatives_batched(
 
         except Exception as e:
             print(f"  Batch {i+1} failed: {e}")
+            batch_errors.append(f"Batch {i+1}: {e}")
             continue
 
         if i < len(batches) - 1:
             time.sleep(delay_seconds)
 
-    return all_initiatives
+    return all_initiatives, batch_errors
