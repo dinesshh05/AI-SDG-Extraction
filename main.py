@@ -17,7 +17,7 @@ from src.filtering import filter_chunks
 
 from src.retrieval import retrieve_sustainability_chunks
 from src.query_bank import SUSTAINABILITY_QUERIES
-from src.extractor import extract_initiatives, extract_initiatives_batched
+from src.extractor import extract_initiatives_batched
 from src.validator import validate_initiatives
 from src.excel_writer import export_to_excel
 
@@ -33,12 +33,6 @@ def _report(progress_callback, step, label):
 
 
 def _log_batch_section_coverage(results, max_tokens_per_batch=4000, max_batches=8):
-    """
-    Debug visibility only - mirrors extractor.py's build_batches token
-    budgeting logic just to show which sections actually make it into
-    the batches that will get processed, vs. which sections are in
-    the retrieved pool but get cut off by the batch ceiling.
-    """
 
     from src.extractor import estimate_tokens
 
@@ -50,7 +44,15 @@ def _log_batch_section_coverage(results, max_tokens_per_batch=4000, max_batches=
 
         chunk = result["chunk"]
         section = chunk.get("section", "Unknown")
-        chunk_tokens = estimate_tokens(chunk["chunk_text"])
+
+        chunk_text_for_estimate = f"""
+SECTION: {chunk.get('section', '')}
+PAGES: {chunk['start_page']}-{chunk['end_page']}
+
+TEXT:
+{chunk['chunk_text']}
+"""
+        chunk_tokens = estimate_tokens(chunk_text_for_estimate)
 
         if current_batch and (current_tokens + chunk_tokens) > max_tokens_per_batch:
             batches.append(current_batch)
@@ -125,6 +127,9 @@ def build_embeddings(progress_callback=None):
 
     total = len(kept_chunks)
 
+    
+    update_every = max(1, total // 20)
+
     for i, chunk in enumerate(kept_chunks):
 
         embedding = generate_embedding(chunk["chunk_text"])
@@ -138,7 +143,7 @@ def build_embeddings(progress_callback=None):
             embedding
         )
 
-        if progress_callback:
+        if progress_callback and ((i + 1) % update_every == 0 or i + 1 == total):
             progress_callback(
                 4,
                 TOTAL_STEPS,
