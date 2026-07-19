@@ -74,7 +74,7 @@ def _is_heading(text: str):
     # titles ("56. Business Responsibility..."). Guard against
     # treating a full sentence as a heading just because it starts
     # with a number.
-    
+
     looks_like_sentence = (
         len(text.split()) > 12
         or text.endswith((".", ":", ";"))
@@ -87,10 +87,12 @@ def _is_heading(text: str):
         return True
 
     for keyword in SECTION_KEYWORDS:
-        if keyword in lower:
+        if keyword in lower and not looks_like_sentence:
             return True
 
     return False
+
+
 def extract_pages(pdf_path):
 
     doc = fitz.open(pdf_path)
