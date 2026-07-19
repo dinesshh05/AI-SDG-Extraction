@@ -26,17 +26,68 @@ TOTAL_STEPS = 6
 
 
 def _report(progress_callback, step, label):
-    """
-    Fires the optional progress callback with (step, TOTAL_STEPS, label)
-    and always prints the same [n/6] line to console, so CLI behavior
-    is unchanged whether or not a callback is provided. Frontends
-    (e.g. Streamlit) pass a callback to render a real progress bar
-    and step label instead of relying on console output.
-    """
     print(f"\n[{step}/{TOTAL_STEPS}] {label}")
 
     if progress_callback:
         progress_callback(step, TOTAL_STEPS, label)
+
+
+def _log_batch_section_coverage(results, max_tokens_per_batch=4000, max_batches=8):
+    """
+    Debug visibility only - mirrors extractor.py's build_batches token
+    budgeting logic just to show which sections actually make it into
+    the batches that will get processed, vs. which sections are in
+    the retrieved pool but get cut off by the batch ceiling.
+    """
+
+    from src.extractor import estimate_tokens
+
+    batches = []
+    current_batch = []
+    current_tokens = 0
+
+    for result in results:
+
+        chunk = result["chunk"]
+        section = chunk.get("section", "Unknown")
+        chunk_tokens = estimate_tokens(chunk["chunk_text"])
+
+        if current_batch and (current_tokens + chunk_tokens) > max_tokens_per_batch:
+            batches.append(current_batch)
+            current_batch = []
+            current_tokens = 0
+
+            if len(batches) >= max_batches:
+                break
+
+        current_batch.append(section)
+        current_tokens += chunk_tokens
+
+    if current_batch and len(batches) < max_batches:
+        batches.append(current_batch)
+
+    processed_sections = set()
+    for batch in batches:
+        processed_sections.update(batch)
+
+    all_sections = set(
+        result["chunk"].get("section", "Unknown")
+        for result in results
+    )
+
+    dropped_sections = all_sections - processed_sections
+
+    print(f"\n--- Batch Coverage Debug ---")
+    print(f"Total unique sections in retrieved pool : {len(all_sections)}")
+    print(f"Sections reaching processed batches      : {len(processed_sections)}")
+    print(f"Sections dropped (never reach LLM)        : {len(dropped_sections)}")
+
+    if dropped_sections:
+        print("Dropped section examples (up to 15):")
+        for s in list(dropped_sections)[:15]:
+            print(f"  - {s}")
+
+    print("----------------------------\n")
 
 
 def build_embeddings(progress_callback=None):
@@ -72,7 +123,9 @@ def build_embeddings(progress_callback=None):
 
     init_db()
 
-    for chunk in kept_chunks:
+    total = len(kept_chunks)
+
+    for i, chunk in enumerate(kept_chunks):
 
         embedding = generate_embedding(chunk["chunk_text"])
 
@@ -84,6 +137,13 @@ def build_embeddings(progress_callback=None):
             chunk["chunk_text"],
             embedding
         )
+
+        if progress_callback:
+            progress_callback(
+                4,
+                TOTAL_STEPS,
+                f"Building Embeddings... ({i + 1}/{total})"
+            )
 
     print(f"Embeddings Stored: {len(kept_chunks)}")
 
@@ -99,9 +159,15 @@ def run_extraction(progress_callback=None):
 
     print(f"Retrieved Chunks: {len(results)}")
 
+    _log_batch_section_coverage(
+        results,
+        max_tokens_per_batch=4000,
+        max_batches=8
+    )
+
     _report(progress_callback, 6, "Extracting Initiatives...")
 
-    initiatives = extract_initiatives_batched(
+    initiatives, batch_errors = extract_initiatives_batched(
         results,
         max_tokens_per_batch=4000,
         max_batches=8,
@@ -109,6 +175,17 @@ def run_extraction(progress_callback=None):
     )
 
     print(f"\nRaw Extracted Records: {len(initiatives)}")
+
+    if batch_errors:
+        print(f"Batch Failures: {len(batch_errors)}")
+        for err in batch_errors:
+            print(f"  - {err}")
+
+    if not initiatives and batch_errors:
+        raise RuntimeError(
+            f"All {len(batch_errors)} extraction batch(es) failed. "
+            f"First error: {batch_errors[0]}"
+        )
 
     validated, validation_errors = validate_initiatives(initiatives)
 
