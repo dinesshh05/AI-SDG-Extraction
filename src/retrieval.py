@@ -31,19 +31,10 @@ SUSTAINABILITY_KEYWORDS = [
 
 # BGE models are trained with an asymmetric query/passage convention:
 # queries need this instruction prefix, passages (chunks) do not.
-# Skipping this measurably weakens semantic retrieval quality with
-# BGE-small-en-v1.5 specifically - it's not a generic nicety, it's
-# how the model was fine-tuned to be used.
 BGE_QUERY_PREFIX = "Represent this sentence for searching relevant passages: "
 
 # Sustainability boost is folded into the same weighted scale as the
-# semantic/BM25 scores, not stacked on top of them. Previously the
-# boost (up to +0.20) was added AFTER the 0.7/0.3 weighted sum, which
-# could let a keyword-dense but semantically weak chunk (e.g. mediocre
-# similarity but 6+ keyword hits) outrank a genuinely more relevant
-# chunk. Treating it as a third weighted component keeps everything on
-# the same 0-1 scale, so it can nudge rankings but can't override a
-# real semantic/BM25 gap.
+# semantic/BM25 scores, not stacked on top of them.
 BOOST_WEIGHT = 0.15
 
 
@@ -79,9 +70,6 @@ def sustainability_boost(text):
         for keyword in SUSTAINABILITY_KEYWORDS
     )
 
-    # 6+ keyword matches saturates the boost at 1.0; scales linearly
-    # below that, same shape as before, just normalized to 0-1 instead
-    # of 0-0.20 so it can be weighted like the other two signals.
     return min(matches / 6.0, 1.0)
 
 
@@ -147,6 +135,24 @@ def retrieve_sustainability_chunks(
     queries,
     top_k_per_query=10
 ):
+    """
+    Retrieves and orders chunks using stratified round-robin selection
+    across queries, instead of pure global score sorting.
+
+    Why: with 40+ queries covering all 17 SDGs, broad topics (climate,
+    energy, renewables) get partially matched by many different
+    queries and dominate a pure global-score ranking. Narrow SDGs with
+    only one or two dedicated queries can score well on THEIR OWN
+    query but still rank low in the merged global pool - and with a
+    fixed batch ceiling downstream, those chunks may never reach the
+    LLM at all, even though retrieval technically found them.
+
+    Round-robin by rank fixes this: every query's #1 result is placed
+    before any query's #2 result, so batch construction downstream
+    sees broad SDG coverage early instead of topic-dominant chunks
+    crowding out narrow ones.
+    """
+
     chunks = fetch_all_embeddings()
 
     tokenized_corpus = [
@@ -156,7 +162,7 @@ def retrieve_sustainability_chunks(
 
     bm25 = BM25Okapi(tokenized_corpus)
 
-    combined = {}
+    per_query_results = []
 
     for query in queries:
 
@@ -167,19 +173,32 @@ def retrieve_sustainability_chunks(
             top_k=top_k_per_query
         )
 
-        for result in results:
+        per_query_results.append(results)
 
+    combined = {}
+    ordered = []
+
+    max_rank = max(
+        (len(r) for r in per_query_results),
+        default=0
+    )
+
+    for rank in range(max_rank):
+
+        for results in per_query_results:
+
+            if rank >= len(results):
+                continue
+
+            result = results[rank]
             chunk = result["chunk"]
             chunk_id = chunk["chunk_id"]
 
-            if (
-                chunk_id not in combined
-                or result["score"] > combined[chunk_id]["score"]
-            ):
+            if chunk_id not in combined:
                 combined[chunk_id] = result
+                ordered.append(result)
 
-    results = list(combined.values())
+            elif result["score"] > combined[chunk_id]["score"]:
+                combined[chunk_id]["score"] = result["score"]
 
-    results.sort(key=lambda x: x["score"], reverse=True)
-
-    return results
+    return ordered
