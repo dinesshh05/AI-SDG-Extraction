@@ -24,6 +24,23 @@ client = OpenAI(
     base_url=LLM_BASE_URL
 )
 
+# Metric values the LLM sometimes writes when no real metric exists,
+# despite prompt instructions to leave the field blank instead. Used
+# as a defensive backstop so a prompt slip doesn't leak into output.
+_BAD_METRIC_VALUES = {"none", "n/a", "na", "null", "not applicable", "-", ""}
+
+
+def _clean_metric(value):
+
+    if not value:
+        return ""
+
+    if str(value).strip().lower() in _BAD_METRIC_VALUES:
+        return ""
+
+    return value
+
+
 def extract_initiatives(text: str):
 
     prompt = f"""
@@ -93,6 +110,18 @@ Rules:
   as a climate mitigation or carbon sequestration effort, SDG 13
   (Climate Action) may be more appropriate than either 14 or 15.
 
+- The "metric" field must contain the specific quantifiable figure
+  from the evidence (a percentage, amount, tonnage, currency value,
+  count, MWh/tCO2e/Ha figure, or similar) whenever the source text
+  contains one for this initiative.
+- If the initiative genuinely has no specific number attached to it,
+  set "metric" to an empty string "" and still return the initiative
+  as normal - a missing metric is NOT a reason to skip or exclude an
+  initiative.
+- NEVER write the word "None", "N/A", "null", "Not Applicable", or
+  any placeholder text as the metric value. Leave it truly empty
+  instead.
+
 - Evidence must be copied verbatim from the report.
 - Do not paraphrase evidence.
 - Do not summarize evidence.
@@ -121,7 +150,7 @@ TEXT:
     content = response.choices[0].message.content.strip()
 
     try:
-        return json.loads(content)
+        parsed = json.loads(content)
 
     except Exception:
 
@@ -134,7 +163,17 @@ TEXT:
             ""
         ).strip()
 
-        return json.loads(content)
+        parsed = json.loads(content)
+
+    # Defensive cleanup: strip placeholder "None"/"N/A" style values
+    # that occasionally slip through despite prompt instructions, so
+    # a missing metric never leaks into downstream output as literal
+    # text like "(None)".
+    for item in parsed:
+        if "metric" in item:
+            item["metric"] = _clean_metric(item["metric"])
+
+    return parsed
 
 
 # ---------------------------------------------------------------------
