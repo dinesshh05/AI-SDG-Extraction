@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sustain Planet — Extractor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --forest-900: #16241c;
+    --forest-700: #1f3d2b;
+    --forest-500: #3c6b4a;
+    --paper: #f3f0e6;
+    --paper-line: #ddd6bf;
+    --gold: #c9a227;
+    --gold-dim: #a9871c;
+    --ink: #16241c;
+    --ink-soft: #56645a;
+    --danger: #a13d2f;
+  }
+ 
+  * { box-sizing: border-box; }
+ 
+  body {
+    margin: 0;
+    color: var(--ink);
+    font-family: 'Inter', system-ui, sans-serif;
+    line-height: 1.5;
+    background: var(--paper);
+  }
+ 
+  h1, h2 { font-family: 'Fraunces', Georgia, serif; margin: 0; }
+ 
+  .mono {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  }
+ 
+  /* ---------- Side-panel nav links (app.html uses its own side panel as the branding zone, so nav lives here instead of a floating overlay) ---------- */
+  .side-nav {
+    display: flex;
+    gap: 18px;
+    margin-bottom: 28px;
+  }
+  .side-nav a {
+    font-size: 12px;
+    font-weight: 500;
+    color: #b9c4b5;
+    text-decoration: none;
+    transition: color 0.15s ease;
+  }
+  .side-nav a:hover, .side-nav a.active { color: #fff; }
+ 
+  /* ---------- Shell: fixed side panel + scrolling content ---------- */
+  .shell {
+    display: flex;
+    min-height: 100vh;
+  }
+ 
+  .side {
+    width: 340px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    background-image:
+      linear-gradient(170deg, rgba(22,36,28,0.55) 0%, rgba(22,36,28,0.88) 65%, rgba(22,36,28,0.96) 100%),
+      url('https://images.unsplash.com/photo-1638535955238-2ea74a647644?auto=format&fit=crop&w=1200&q=80');
+    background-size: cover;
+    background-position: center;
+    color: #f3f0e6;
+    padding: 40px 32px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+ 
+  .brand .mono {
+    display: block;
+    font-size: 12px;
+    letter-spacing: 0.16em;
+    color: var(--gold);
+    margin-bottom: 10px;
+  }
+  .brand h1 {
+    font-size: 34px;
+    font-weight: 600;
+    color: #fff;
+    letter-spacing: -0.01em;
+  }
+  .brand .tagline {
+    margin-top: 16px;
+    font-size: 14px;
+    color: #d8dfd6;
+    max-width: 30ch;
+  }
+ 
+  /* SDG color strip — the actual UN goal palette, doubles as brand mark */
+  .sdg-strip {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 4px;
+    margin-top: 32px;
+  }
+  .sdg-swatch {
+    aspect-ratio: 1;
+    border-radius: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.9);
+    font-family: 'IBM Plex Mono', monospace;
+  }
+ 
+  .side-footer {
+    font-size: 12px;
+    color: #aab5a5;
+    line-height: 1.6;
+  }
+  .side-footer a { color: #d8dfd6; }
+ 
+  /* ---------- Content ---------- */
+  .content {
+    flex: 1;
+    padding: 56px 64px 96px;
+    max-width: 760px;
+  }
+ 
+  .panel {
+    padding: 40px 0;
+  }
+  .panel + .panel {
+    border-top: 1px solid var(--paper-line);
+  }
+ 
+  .panel-head {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    margin-bottom: 6px;
+  }
+  .panel-index {
+    font-size: 13px;
+    color: var(--gold-dim);
+    font-weight: 500;
+  }
+  .panel h2 {
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--forest-900);
+  }
+  .panel-sub {
+    font-size: 14px;
+    color: var(--ink-soft);
+    margin: 10px 0 24px;
+    max-width: 56ch;
+  }
+ 
+  /* Upload */
+  .dropzone {
+    border: 1px solid var(--forest-500);
+    padding: 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+  }
+  .dropzone:hover, .dropzone.drag-over {
+    background: #eae5d3;
+    border-color: var(--forest-900);
+  }
+  .dropzone input { display: none; }
+  .dropzone .filename {
+    margin-top: 8px;
+    font-size: 13px;
+    color: var(--forest-700);
+    font-weight: 500;
+  }
+ 
+  button {
+    font-family: 'Inter', inherit;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    border: none;
+    border-radius: 3px;
+    padding: 12px 22px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+  button:disabled { opacity: 0.45; cursor: not-allowed; }
+ 
+  .btn-primary {
+    background: var(--forest-700);
+    color: #fff;
+    margin-top: 18px;
+  }
+  .btn-primary:hover:not(:disabled) { background: var(--forest-900); }
+ 
+  .btn-gold {
+    background: var(--gold);
+    color: var(--forest-900);
+  }
+  .btn-gold:hover:not(:disabled) { background: var(--gold-dim); }
+ 
+  /* Step tracker — square ticks + mono numerals, not circular dots */
+  .steps {
+    display: flex;
+    gap: 4px;
+    margin: 26px 0 10px;
+  }
+  .step {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .step .tick {
+    height: 3px;
+    background: var(--paper-line);
+    transition: background 0.3s ease;
+  }
+  .step.done .tick { background: var(--gold); }
+  .step.active .tick { background: var(--forest-700); }
+  .step label {
+    font-size: 10px;
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .step.active label, .step.done label { color: var(--forest-900); }
+ 
+  .status-line {
+    margin-top: 16px;
+    font-size: 14px;
+    color: var(--ink-soft);
+  }
+  .status-line.error { color: var(--danger); font-weight: 500; }
+ 
+  .result-row {
+    margin-top: 20px;
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .warning-note { font-size: 13px; color: var(--ink-soft); }
+ 
+  .results-summary {
+    margin-top: 24px;
+    display: flex;
+    gap: 28px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .results-summary .stat-value {
+    font-size: 22px;
+    color: var(--forest-900);
+    display: block;
+  }
+  .results-summary .stat-label {
+    font-size: 11px;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+ 
+  .sdg-results {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+  .sdg-card {
+    border: 1px solid var(--paper-line);
+    background: #fff;
+  }
+  .sdg-card summary {
+    padding: 14px 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: 600;
+    color: var(--forest-900);
+    list-style: none;
+  }
+  .sdg-card summary::-webkit-details-marker { display: none; }
+  .sdg-card summary .chip {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    color: #fff;
+    background: var(--forest-700);
+    padding: 2px 7px;
+    border-radius: 2px;
+  }
+  .sdg-card summary .count {
+    margin-left: auto;
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--ink-soft);
+  }
+  .initiative {
+    padding: 14px 16px 18px 42px;
+    border-top: 1px solid var(--paper-line);
+  }
+  .initiative + .initiative { border-top: 1px dashed var(--paper-line); }
+  .initiative .init-name { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+  .initiative .init-desc { font-size: 13px; color: var(--ink-soft); margin-bottom: 8px; }
+  .initiative .init-metric {
+    display: inline-block;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--gold-dim);
+    margin-bottom: 8px;
+  }
+  .initiative .init-evidence {
+    font-size: 12px;
+    color: var(--forest-700);
+    border-left: 2px solid var(--gold);
+    padding-left: 10px;
+    font-style: italic;
+  }
+  .initiative .init-page {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-soft);
+    margin-top: 6px;
+  }
+ 
+  /* Chat */
+  .doc-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12px;
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--forest-700);
+    border: 1px solid var(--forest-500);
+    padding: 4px 10px;
+    margin-bottom: 16px;
+  }
+  .doc-badge .dot-live {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--gold);
+  }
+ 
+  .chat-log {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    max-height: 420px;
+    overflow-y: auto;
+    margin-bottom: 18px;
+  }
+  .msg {
+    max-width: 85%;
+    padding: 12px 15px;
+    font-size: 14px;
+    white-space: pre-wrap;
+  }
+  .msg.user {
+    align-self: flex-end;
+    background: var(--forest-700);
+    color: #fff;
+  }
+  .msg.bot {
+    align-self: flex-start;
+    border: 1px solid var(--paper-line);
+    background: transparent;
+  }
+  .msg.bot.pending { color: var(--ink-soft); font-style: italic; border-style: dashed; }
+ 
+  .chat-input-row { display: flex; gap: 10px; }
+  .chat-input-row textarea {
+    flex: 1;
+    resize: none;
+    font-family: inherit;
+    font-size: 14px;
+    padding: 12px 14px;
+    border: 1px solid var(--paper-line);
+    border-radius: 3px;
+    background: #fff;
+    min-height: 46px;
+    max-height: 120px;
+  }
+  .chat-input-row textarea:focus {
+    outline: 1px solid var(--forest-700);
+    outline-offset: 0;
+  }
+ 
+  @media (max-width: 860px) {
+    .shell { flex-direction: column; }
+    .side {
+      width: auto;
+      height: auto;
+      position: static;
+      padding: 32px 24px;
+    }
+    .sdg-strip { grid-template-columns: repeat(9, 1fr); max-width: 320px; }
+    .content { padding: 40px 24px 80px; max-width: none; }
+  }
+ 
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+ 
+<div class="shell">
+ 
+  <aside class="side">
+    <div class="brand">
+      <nav class="side-nav">
+        <a href="index.html">Home</a>
+        <a href="app.html" class="active">Analyze</a>
+        <a href="contact.html">Contact</a>
+      </nav>
+      <span class="mono">SUSTAINABILITY / DOSSIER</span>
+      <h1>Sustain Planet</h1>
+      <p class="tagline">Every initiative in an annual report, mapped to the UN Goals — with proof.</p>
+ 
+      <div class="sdg-strip" aria-hidden="true">
+        <div class="sdg-swatch" style="background:#E5243B">1</div>
+        <div class="sdg-swatch" style="background:#DDA63A">2</div>
+        <div class="sdg-swatch" style="background:#4C9F38">3</div>
+        <div class="sdg-swatch" style="background:#C5192D">4</div>
+        <div class="sdg-swatch" style="background:#FF3A21">5</div>
+        <div class="sdg-swatch" style="background:#26BDE2">6</div>
+        <div class="sdg-swatch" style="background:#FCC30B; color:#16241c">7</div>
+        <div class="sdg-swatch" style="background:#A21942">8</div>
+        <div class="sdg-swatch" style="background:#FD6925">9</div>
+        <div class="sdg-swatch" style="background:#DD1367">10</div>
+        <div class="sdg-swatch" style="background:#FD9D24; color:#16241c">11</div>
+        <div class="sdg-swatch" style="background:#BF8B2E">12</div>
+        <div class="sdg-swatch" style="background:#3F7E44">13</div>
+        <div class="sdg-swatch" style="background:#0A97D9">14</div>
+        <div class="sdg-swatch" style="background:#56C02B">15</div>
+        <div class="sdg-swatch" style="background:#00689D">16</div>
+        <div class="sdg-swatch" style="background:#19486A">17</div>
+      </div>
+    </div>
+ 
+    <div class="side-footer">
+      Photo: lush green mountain range, Mitesh Savani / Unsplash
+    </div>
+  </aside>
+ 
+  <main class="content">
+ 
+    <section class="panel" id="upload-section">
+      <div class="panel-head">
+        <span class="panel-index mono">01</span>
+        <h2>Upload a report</h2>
+      </div>
+      <p class="panel-sub">One PDF at a time. Extraction runs in the background — the assistant is available immediately for general questions while you wait.</p>
+ 
+      <div class="dropzone" id="dropzone">
+        <input type="file" id="file-input" accept="application/pdf">
+        <div id="dropzone-label">Click to choose a PDF, or drag one here</div>
+        <div class="filename" id="filename-label"></div>
+      </div>
+ 
+      <button class="btn-primary" id="upload-btn" disabled>Upload &amp; Extract</button>
+ 
+      <div id="progress-block" style="display:none;">
+        <div class="steps" id="steps"></div>
+        <div class="status-line" id="status-line"></div>
+        <div class="result-row" id="result-row" style="display:none;"></div>
+        <div id="results-view"></div>
+      </div>
+    </section>
+ 
+    <section class="panel" id="chat-section">
+      <div class="panel-head">
+        <span class="panel-index mono">02</span>
+        <h2>Ask the assistant</h2>
+      </div>
+      <p class="panel-sub" id="chat-sub">Ask about the SDGs in general, or about your uploaded report once extraction is done.</p>
+ 
+      <div id="doc-badge-wrap"></div>
+ 
+      <div class="chat-log" id="chat-log"></div>
+ 
+      <div class="chat-input-row">
+        <textarea id="chat-input" placeholder="e.g. What are the SDGs?" rows="1"></textarea>
+        <button class="btn-gold" id="chat-send">Send</button>
+      </div>
+    </section>
+ 
+  </main>
+ 
+</div>
+ 
+<script>
+const STEP_LABELS = ["Parsing", "Chunking", "Filtering", "Indexing", "Retrieving", "Extracting"];
+ 
+let documentId = null;
+let pollTimer = null;
+ 
+// ---------- Upload ----------
+const fileInput = document.getElementById('file-input');
+const dropzone = document.getElementById('dropzone');
+const filenameLabel = document.getElementById('filename-label');
+const uploadBtn = document.getElementById('upload-btn');
+const progressBlock = document.getElementById('progress-block');
+const stepsEl = document.getElementById('steps');
+const statusLine = document.getElementById('status-line');
+const resultRow = document.getElementById('result-row');
+ 
+dropzone.addEventListener('click', () => fileInput.click());
+dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('drag-over'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
+dropzone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dropzone.classList.remove('drag-over');
+  if (e.dataTransfer.files.length) {
+    fileInput.files = e.dataTransfer.files;
+    handleFileChosen();
+  }
+});
+fileInput.addEventListener('change', handleFileChosen);
+ 
+function handleFileChosen() {
+  const file = fileInput.files[0];
+  if (!file) return;
+  filenameLabel.textContent = file.name;
+  uploadBtn.disabled = false;
+}
+ 
+function renderSteps(activeIndex, done) {
+  stepsEl.innerHTML = '';
+  STEP_LABELS.forEach((label, i) => {
+    const step = document.createElement('div');
+    step.className = 'step';
+    if (done || i < activeIndex) step.classList.add('done');
+    else if (i === activeIndex) step.classList.add('active');
+    step.innerHTML = `<div class="tick"></div><label>${label}</label>`;
+    stepsEl.appendChild(step);
+  });
+}
+ 
+uploadBtn.addEventListener('click', async () => {
+  const file = fileInput.files[0];
+  if (!file) return;
+ 
+  uploadBtn.disabled = true;
+  progressBlock.style.display = 'block';
+  resultRow.style.display = 'none';
+  statusLine.className = 'status-line';
+  statusLine.textContent = 'Uploading...';
+  renderSteps(0, false);
+ 
+  const formData = new FormData();
+  formData.append('file', file);
+ 
+  try {
+    const res = await fetch('/extract', { method: 'POST', body: formData });
+    if (!res.ok) throw new Error('Upload failed (' + res.status + ')');
+    const data = await res.json();
+    documentId = data.document_id;
+    updateChatBadge();
+    startPolling();
+  } catch (err) {
+    statusLine.className = 'status-line error';
+    statusLine.textContent = 'Error: ' + err.message;
+    uploadBtn.disabled = false;
+  }
+});
+ 
+function startPolling() {
+  if (pollTimer) clearInterval(pollTimer);
+  pollTimer = setInterval(pollStatus, 2000);
+  pollStatus();
+}
+ 
+async function pollStatus() {
+  if (!documentId) return;
+  try {
+    const res = await fetch('/status/' + documentId);
+    if (!res.ok) throw new Error('Status check failed');
+    const data = await res.json();
+ 
+    if (data.status === 'processing') {
+      const idx = data.phase_step ? data.phase_step - 1 : 0;
+      renderSteps(idx, false);
+      statusLine.className = 'status-line';
+      statusLine.textContent = data.phase_label || 'Processing...';
+    } else if (data.status === 'ready') {
+      clearInterval(pollTimer);
+      renderSteps(STEP_LABELS.length - 1, true);
+      statusLine.className = 'status-line';
+      statusLine.textContent = 'Extraction complete.';
+      resultRow.style.display = 'flex';
+      resultRow.innerHTML = `
+        <button class="btn-gold" onclick="window.location='/extract/${documentId}/download'">Download Report</button>
+        <button class="btn-primary" id="view-results-btn" style="margin-top:0;">View Results</button>
+        ${data.warnings ? `<span class="warning-note">${data.warnings} record(s) failed validation and were excluded.</span>` : ''}
+      `;
+      document.getElementById('view-results-btn').addEventListener('click', loadResults);
+      updateChatBadge();
+    } else if (data.status === 'failed') {
+      clearInterval(pollTimer);
+      statusLine.className = 'status-line error';
+      statusLine.textContent = 'Extraction failed: ' + (data.error || 'unknown error');
+      uploadBtn.disabled = false;
+    }
+  } catch (err) {
+    clearInterval(pollTimer);
+    statusLine.className = 'status-line error';
+    statusLine.textContent = 'Error checking status: ' + err.message;
+  }
+}
+ 
+const resultsView = document.getElementById('results-view');
+ 
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+ 
+async function loadResults() {
+  const btn = document.getElementById('view-results-btn');
+  btn.disabled = true;
+  btn.textContent = 'Loading...';
+ 
+  try {
+    const res = await fetch('/extract/' + documentId + '/results');
+    if (!res.ok) throw new Error('Could not load results (' + res.status + ')');
+    const data = await res.json();
+ 
+    let html = `
+      <div class="results-summary">
+        <div><span class="stat-value">${data.initiative_count}</span><span class="stat-label">Initiatives</span></div>
+        <div><span class="stat-value">${data.sdg_count}</span><span class="stat-label">SDGs Identified</span></div>
+      </div>
+      <div class="sdg-results">
+    `;
+ 
+    data.sdgs.forEach((sdg) => {
+      html += `<details class="sdg-card">
+        <summary><span class="chip">SDG ${sdg.sdg_id}</span> ${escapeHtml(sdg.sdg_name.replace(/^SDG \d+:\s*/, ''))}<span class="count">${sdg.initiatives.length} initiative${sdg.initiatives.length !== 1 ? 's' : ''}</span></summary>`;
+ 
+      sdg.initiatives.forEach((init) => {
+        html += `<div class="initiative">
+          <div class="init-name">${escapeHtml(init.initiative_name)}</div>
+          <div class="init-desc">${escapeHtml(init.description)}</div>
+          ${init.metric ? `<div class="init-metric">${escapeHtml(init.metric)}</div>` : ''}
+          ${init.evidence ? `<div class="init-evidence">&ldquo;${escapeHtml(init.evidence)}&rdquo;</div>` : ''}
+          ${init.page_reference ? `<div class="init-page">Page ${escapeHtml(init.page_reference)}</div>` : ''}
+        </div>`;
+      });
+ 
+      html += `</details>`;
+    });
+ 
+    html += `</div>`;
+    resultsView.innerHTML = html;
+    btn.style.display = 'none';
+  } catch (err) {
+    resultsView.innerHTML = `<div class="status-line error">Error loading results: ${err.message}</div>`;
+    btn.disabled = false;
+    btn.textContent = 'View Results';
+  }
+}
+ 
+// ---------- Chat ----------
+const chatLog = document.getElementById('chat-log');
+const chatInput = document.getElementById('chat-input');
+const chatSend = document.getElementById('chat-send');
+const docBadgeWrap = document.getElementById('doc-badge-wrap');
+const chatSub = document.getElementById('chat-sub');
+
+let chatHistory = [];
+ 
+function updateChatBadge() {
+  if (!documentId) { docBadgeWrap.innerHTML = ''; return; }
+  docBadgeWrap.innerHTML = `<div class="doc-badge"><span class="dot-live"></span>Document attached — ask about it once extraction finishes</div>`;
+  chatSub.textContent = "Ask about the SDGs, or your uploaded report.";
+}
+ 
+function appendMessage(role, text) {
+  const div = document.createElement('div');
+  div.className = 'msg ' + role;
+  div.textContent = text;
+  chatLog.appendChild(div);
+  chatLog.scrollTop = chatLog.scrollHeight;
+  return div;
+}
+ 
+async function sendChat() {
+  const text = chatInput.value.trim();
+  if (!text) return;
+
+  appendMessage('user', text);
+  chatInput.value = '';
+  chatSend.disabled = true;
+
+  const pending = appendMessage('bot pending', 'Thinking...');
+
+  try {
+    const res = await fetch('/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: text,
+        document_id: documentId,
+        history: chatHistory,
+      }),
+    });
+    if (!res.ok) throw new Error('Request failed (' + res.status + ')');
+    const data = await res.json();
+
+    let displayText = data.reply;
+    if (data.sources && data.sources.length) {
+      displayText += '\n\nSources: ' + [...new Set(data.sources)].join(' · ');
+    }
+
+    pending.textContent = displayText;
+    pending.classList.remove('pending');
+
+    chatHistory.push({ role: 'user', content: text });
+    chatHistory.push({ role: 'assistant', content: data.reply });
+
+  } catch (err) {
+    pending.textContent = 'Something went wrong: ' + err.message;
+    pending.classList.remove('pending');
+  } finally {
+    chatSend.disabled = false;
+  }
+}
+ 
+chatSend.addEventListener('click', sendChat);
+chatInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendChat();
+  }
+});
+chatInput.addEventListener('input', () => {
+  chatInput.style.height = 'auto';
+  chatInput.style.height = Math.min(chatInput.scrollHeight, 120) + 'px';
+});
+</script>
+ 
+</body>
+</html>
+ 

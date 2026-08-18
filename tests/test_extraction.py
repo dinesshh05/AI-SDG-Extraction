@@ -9,21 +9,21 @@ sys.path.append(
     )
 )
 
-from src.validator import validate_initiatives
+from extractor.validator import validate_initiatives
 
-from src.excel_writer import (
+from extractor.excel_writer import (
     export_to_excel
 )
 
-from src.retrieval import (
+from retrieval_core.retrieval import (
     retrieve_sustainability_chunks
 )
 
-from src.query_bank import (
+from extractor.query_bank import (
     SUSTAINABILITY_QUERIES
 )
 
-from src.extractor import (
+from extractor.extractor import (
     extract_initiatives
 )
 

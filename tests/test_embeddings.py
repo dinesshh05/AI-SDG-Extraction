@@ -9,18 +9,18 @@ sys.path.append(
     )
 )
 
-from src.parser import extract_pages
-from src.chunker import chunk_pages
+from extractor.parser import extract_pages
+from extractor.chunker import chunk_pages
 
-from src.embeddings import generate_embedding
+from retrieval_core.embeddings import generate_embedding
 
-from src.vector_store import (
+from retrieval_core.vector_store import (
     init_db,
     store_embedding,
     fetch_all_embeddings
 )
 
-from src.filtering import is_noise_chunk
+from extractor.filtering import is_noise_chunk
 
 
 pages = extract_pages(

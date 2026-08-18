@@ -8,8 +8,8 @@ sys.path.append(
         )
     )
 )
-from src.parser import extract_pages
-from src.chunker import chunk_pages
+from extractor.parser import extract_pages
+from extractor.chunker import chunk_pages
 
 pages = extract_pages(
     "input\Adani Port FY22.pdf"

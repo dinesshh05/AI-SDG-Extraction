@@ -9,3 +9,7 @@ openai
 pandas
 streamlit
 rank-bm25
+fastapi
+groq
+uvicorn[standard]
+python-multipart
