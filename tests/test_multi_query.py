@@ -9,11 +9,11 @@ sys.path.append(
     )
 )
 
-from src.retrieval import (
+from retrieval_core.retrieval import (
     retrieve_sustainability_chunks
 )
 
-from src.query_bank import (
+from extractor.query_bank import (
     SUSTAINABILITY_QUERIES
 )
 

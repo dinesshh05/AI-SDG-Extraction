@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contact — Sustain Planet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --forest-900: #16241c;
+    --forest-700: #1f3d2b;
+    --forest-500: #3c6b4a;
+    --paper: #f3f0e6;
+    --paper-line: #ddd6bf;
+    --gold: #c9a227;
+    --gold-dim: #a9871c;
+    --ink: #16241c;
+    --ink-soft: #56645a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    color: var(--ink);
+    font-family: 'Inter', system-ui, sans-serif;
+    line-height: 1.5;
+    background: var(--paper);
+  }
+  h1, h2 { font-family: 'Fraunces', Georgia, serif; margin: 0; }
+ 
+  /* ---------- Floating pill nav (same as index.html) ---------- */
+  .site-nav {
+    position: fixed;
+    top: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 26px;
+    background: rgba(22,36,28,0.9);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 999px;
+    padding: 10px 22px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.2);
+  }
+  .site-nav .nav-logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 15px;
+    color: #fff;
+    text-decoration: none;
+    margin-right: 4px;
+  }
+  .logo-mark {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: conic-gradient(#E5243B, #DDA63A, #4C9F38, #26BDE2, #FD6925, #0A97D9, #56C02B, #19486A, #E5243B);
+    flex-shrink: 0;
+  }
+  .site-nav a.nav-link {
+    font-size: 13px;
+    font-weight: 500;
+    color: #d8dfd6;
+    text-decoration: none;
+  }
+  .site-nav a.nav-link:hover, .site-nav a.nav-link.active { color: #fff; }
+ 
+  @media (max-width: 640px) {
+    .site-nav { gap: 14px; padding: 8px 16px; top: 10px; }
+    .site-nav a.nav-link { font-size: 11px; }
+  }
+ 
+  /* ---------- Content ---------- */
+  .wrap {
+    max-width: 560px;
+    margin: 0 auto;
+    padding: 160px 24px 96px;
+  }
+  h1 {
+    font-size: 34px;
+    font-weight: 600;
+    color: var(--forest-900);
+    letter-spacing: -0.01em;
+  }
+  .wrap > p {
+    margin-top: 14px;
+    font-size: 15px;
+    color: var(--ink-soft);
+    max-width: 50ch;
+  }
+ 
+  form { margin-top: 36px; }
+  .field { margin-bottom: 20px; }
+  .field label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--forest-700);
+    margin-bottom: 6px;
+  }
+  .field input, .field textarea {
+    width: 100%;
+    font-family: inherit;
+    font-size: 14px;
+    padding: 11px 13px;
+    border: 1px solid var(--paper-line);
+    border-radius: 3px;
+    background: #fff;
+  }
+  .field textarea { resize: vertical; min-height: 120px; }
+  .field input:focus, .field textarea:focus {
+    outline: 1px solid var(--forest-700);
+    outline-offset: 0;
+  }
+ 
+  button {
+    font-family: 'Inter', inherit;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    border: none;
+    border-radius: 3px;
+    padding: 12px 24px;
+    cursor: pointer;
+    background: var(--forest-700);
+    color: #fff;
+  }
+  button:hover { background: var(--forest-900); }
+ 
+  .confirm {
+    margin-top: 18px;
+    font-size: 13px;
+    color: var(--forest-700);
+    display: none;
+  }
+ 
+  .alt-contact {
+    margin-top: 40px;
+    padding-top: 24px;
+    border-top: 1px solid var(--paper-line);
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+  .alt-contact a { color: var(--forest-700); }
+</style>
+</head>
+<body>
+ 
+<nav class="site-nav">
+  <a href="index.html" class="nav-logo"><span class="logo-mark" aria-hidden="true"></span>Sustain Planet</a>
+  <a href="index.html" class="nav-link">Home</a>
+  <a href="app.html" class="nav-link">Analyze</a>
+  <a href="app.html#chat-section" class="nav-link">Chatbot</a>
+  <a href="contact.html" class="nav-link active">Contact</a>
+</nav>
+ 
+<div class="wrap">
+  <h1>Let's build a more sustainable information ecosystem.</h1>
+  <p>Have a question about the platform, sustainability intelligence, or our work? Send a message and it'll open directly in your email client.</p>
+ 
+  <form id="contact-form">
+    <div class="field">
+      <label for="name">Name</label>
+      <input type="text" id="name" required>
+    </div>
+    <div class="field">
+      <label for="email">Email</label>
+      <input type="email" id="email" required>
+    </div>
+    <div class="field">
+      <label for="message">Message</label>
+      <textarea id="message" required></textarea>
+    </div>
+    <button type="submit">Send Message</button>
+    <div class="confirm" id="confirm">Opening your email client...</div>
+  </form>
+ 
+  <div class="alt-contact">
+    Prefer email directly? Write to <a href="mailto:hello@sustainplanet.app">hello@sustainplanet.app</a>
+    <!-- TODO: replace with the real contact address -->
+  </div>
+</div>
+ 
+<script>
+document.getElementById('contact-form').addEventListener('submit', function (e) {
+  e.preventDefault();
+  const name = document.getElementById('name').value;
+  const email = document.getElementById('email').value;
+  const message = document.getElementById('message').value;
+ 
+  const subject = encodeURIComponent('Message from ' + name + ' via Sustain Planet');
+  const body = encodeURIComponent(message + '\n\n— ' + name + ' (' + email + ')');
+ 
+  document.getElementById('confirm').style.display = 'block';
+  window.location.href = `mailto:hello@sustainplanet.app?subject=${subject}&body=${body}`;
+});
+</script>
+ 
+</body>
+</html>
+ 

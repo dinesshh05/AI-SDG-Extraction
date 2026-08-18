@@ -152,7 +152,6 @@ def _format_activity_list(items):
         return NO_ACTIVITY_TEXT
 
     lines = []
-
     for i, item in enumerate(items, start=1):
         text = (item.get("description") or item.get("initiative_name", "")).strip()
         metric = item.get("metric", "")
@@ -160,13 +159,58 @@ def _format_activity_list(items):
             text = f"{text} ({metric})" if text else metric
         lines.append(f"{i}. {text}")
 
+        evidence = (item.get("evidence") or "").strip()
+        page_ref = (item.get("page_reference") or "").strip()
+
+        if evidence:
+            proof_line = f'   Proof: "{evidence}"'
+            if page_ref:
+                proof_line += f" (Page {page_ref})"
+            lines.append(proof_line)
+
     return "\n".join(lines)
+
+
+def build_sdg_report(initiatives):
+    """
+    Runs the same junk-filter + dedup + SDG-grouping pipeline as
+    export_to_excel, but returns structured data instead of writing a
+    file. Used both by export_to_excel (below) and by the backend's
+    GET /extract/{id}/results JSON endpoint, so the two representations
+    of the same report never drift out of sync with each other.
+
+    Only SDGs with at least one initiative are included - unlike the
+    Excel export, this doesn't need a "No activity fetched" placeholder
+    row, since the frontend simply omits an SDG card it doesn't
+    receive.
+    """
+
+    initiatives = [item for item in initiatives if not _is_junk_initiative(item)]
+    initiatives = _deduplicate_initiatives(initiatives)
+
+    grouped = _group_by_sdg(initiatives)
+
+    sdgs = []
+    for sdg_no in sorted(grouped):
+        items = grouped[sdg_no]
+        if not items:
+            continue
+        sdgs.append({
+            "sdg_id": sdg_no,
+            "sdg_name": SDG_TITLES[sdg_no],
+            "initiatives": items,
+        })
+
+    return {
+        "initiative_count": len(initiatives),
+        "sdg_count": len(sdgs),
+        "sdgs": sdgs,
+    }
 
 
 def export_to_excel(initiatives, output_path="output/sustainability_report.xlsx"):
 
-    initiatives = [item for item in initiatives if not _is_junk_initiative(item)]
-    initiatives = _deduplicate_initiatives(initiatives)
+    report = build_sdg_report(initiatives)
 
     os.makedirs("output", exist_ok=True)
 
@@ -174,15 +218,14 @@ def export_to_excel(initiatives, output_path="output/sustainability_report.xlsx"
     ws = wb.active
     ws.title = "Sustainability Initiatives"
 
-    grouped = _group_by_sdg(initiatives)
     row = 1
 
-    for sdg_no in sorted(grouped):
+    for sdg in report["sdgs"]:
 
-        ws.cell(row=row, column=1, value=SDG_TITLES[sdg_no]).font = HEADER_FONT
+        ws.cell(row=row, column=1, value=sdg["sdg_name"]).font = HEADER_FONT
         row += 1
 
-        cell = ws.cell(row=row, column=1, value=_format_activity_list(grouped[sdg_no]))
+        cell = ws.cell(row=row, column=1, value=_format_activity_list(sdg["initiatives"]))
         cell.font = BODY_FONT
         cell.alignment = Alignment(wrap_text=True)
         row += 2

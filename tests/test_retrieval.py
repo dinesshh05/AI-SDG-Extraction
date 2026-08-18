@@ -9,8 +9,8 @@ sys.path.append(
     )
 )
 
-from src.retrieval import retrieve_sustainability_chunks
-from src.query_bank import SUSTAINABILITY_QUERIES
+from retrieval_core.retrieval import retrieve_sustainability_chunks
+from extractor.query_bank import SUSTAINABILITY_QUERIES
 
 results = retrieve_sustainability_chunks(
     queries=SUSTAINABILITY_QUERIES,
