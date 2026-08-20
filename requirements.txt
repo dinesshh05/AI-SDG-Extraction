@@ -1,6 +1,6 @@
 pymupdf
 sentence-transformers
-torch
+torch==2.12.0+cpu
 numpy
 pydantic
 openpyxl

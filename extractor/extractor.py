@@ -77,7 +77,7 @@ def run_extraction(document_id: str, file_path: str, progress_callback=None):
 
     _step(6, "Extracting, validating, and exporting...")
     initiatives, batch_errors = extract_initiatives_batched(
-        results, max_tokens_per_batch=4000, max_batches=8, delay_seconds=2
+        results, max_tokens_per_batch=2500, max_batches=12, delay_seconds=2
     )
     print(f"Raw Extracted Records: {len(initiatives)}")
 

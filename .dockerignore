@@ -1,0 +1,11 @@
+SDGenv/ 
+.env 
+.git/ 
+__pycache__/ 
+*.pyc 
+cache/ 
+output/ 
+input/*.pdf 
+.pytest_cache/ 
+.vscode/ 
+.idea/ 
