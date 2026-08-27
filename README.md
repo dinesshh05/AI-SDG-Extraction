@@ -1,6 +1,6 @@
 # AI Sustainability Initiative Extractor
 
-🔗 **Live Demo:** https://ai-sdg-extraction-jqzkbzg9b5s9h73q98fscx.streamlit.app
+🔗 **Live Demo:** https://ai-sdg-extraction.onrender.com
 
 💻 **GitHub Repository:** https://github.com/dinesshh05/AI-SDG-Extraction
 
